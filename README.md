@@ -44,6 +44,21 @@ FORCE_SUB_CHANNEL=আপনার_চ্যানেল_ইউজারনেম
 python bot.py
 ```
 
+### Heroku Deploy
+```bash
+# ফাইল এড করুন
+git add .
+
+# কমিট করুন
+git commit -m "All OK"
+
+# হেরোকুতে পুশ করুন
+git push heroku main
+
+# ওয়ার্কার প্রসেস স্কেল করুন
+heroku ps:scale worker=1
+```
+
 ## বিস্তারিত ব্যবহার নির্দেশিকা
 
 ### PDF মার্জ করা
