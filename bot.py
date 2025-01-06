@@ -4,6 +4,26 @@ from dotenv import load_dotenv
 import os
 import asyncio
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Simple HTTP Server for health checks
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b"Bot is running!")
+
+def run_health_server():
+    port = int(os.getenv('PORT', 8080))
+    server_address = ('', port)
+    httpd = HTTPServer(server_address, HealthCheckHandler)
+    print(f"Starting health check server on port {port}")
+    httpd.serve_forever()
+
+# Start health check server in a separate thread
+threading.Thread(target=run_health_server, daemon=True).start()
 
 # Load environment variables
 load_dotenv()
