@@ -245,16 +245,21 @@ async def link_handler(client, message):
             keywords, number = settings.get('whatsapp_template').split('|', 1)
             keywords = [k.strip().lower() for k in keywords.split(',')]
             if any(keyword in text for keyword in keywords):
-                # Create WhatsApp button
+                # Create WhatsApp and Telegram buttons
+                telegram_username = os.getenv('TELEGRAM_CONTACT', 'mehedihasan9994')
                 buttons = [
                     [InlineKeyboardButton(
                         "📱 WhatsApp এ যোগাযোগ করুন",
                         url=f"https://api.whatsapp.com/send?phone={number.strip().replace('+', '')}&text=PDF"
+                    )],
+                    [InlineKeyboardButton(
+                        "📱 Telegram এ যোগাযোগ করুন",
+                        url=f"https://t.me/{telegram_username}"
                     )]
                 ]
                 await message.reply_text(
-                    "**📞 WhatsApp এ যোগাযোগ করুন**\n\n"
-                    "নিচের বাটনে ক্লিক করে সরাসরি WhatsApp এ চলে যান।",
+                    "**📞 WhatsApp/Telegram এ যোগাযোগ করুন**\n\n"
+                    "নিচের বাটনে ক্লিক করে সরাসরি WhatsApp অথবা Telegram এ চলে যান।",
                     reply_markup=InlineKeyboardMarkup(buttons)
                 )
                 return
