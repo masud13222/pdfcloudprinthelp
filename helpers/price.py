@@ -121,21 +121,13 @@ async def price_command(client: Client, message: Message):
                 f"   • দাম - {price:.1f} টাকা\n"
             )
         
-        # Calculate combined total
-        combined_sheets = calculate_sheets(total_pages, layout)
-        combined_price = calculate_price(combined_sheets)
-        
         # Show calculation
         await message.reply_text(
             "📊 **প্রিন্টিং হিসাব**\n\n"
             f"**📑 আলাদা হিসাব:**\n{''.join(individual_calcs)}\n"
-            f"**📊 মোট (আলাদা):**\n"
+            f"**📊 মোট:**\n"
             f"• মোট শীট: {total_sheets}টি\n"
             f"• মোট দাম: {total_price:.1f} টাকা\n\n"
-            f"**📊 মোট (একসাথে):**\n"
-            f"• মোট পেজ: {total_pages}টি\n"
-            f"• মোট শীট: {combined_sheets}টি\n"
-            f"• মোট দাম: {combined_price:.1f} টাকা\n\n"
             f"**🖨️ প্রিন্টিং তথ্য:**\n"
             f"• লেআউট: {layout}\n"
             f"• প্রতি শীটে স্লাইড: {8 if layout == 'L4' else 12 if layout == 'L6' else 16 if layout == 'L8' else 2 if layout == 'P1' else 6 if layout == 'P3' else 8}টি\n\n"
