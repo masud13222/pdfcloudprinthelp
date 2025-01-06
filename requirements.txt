@@ -1,0 +1,13 @@
+pyrogram==2.0.106
+tgcrypto==1.2.5
+pymongo
+PyPDF2
+python-dotenv
+PyMuPDF
+Pillow
+numpy
+humanize
+img2pdf
+requests
+motor
+
