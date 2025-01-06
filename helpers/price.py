@@ -128,7 +128,7 @@ async def price_command(client: Client, message: Message):
         # Show calculation
         await message.reply_text(
             "📊 **প্রিন্টিং হিসাব**\n\n"
-            f"**📑 ফলাদা হিসাব:**\n{''.join(individual_calcs)}\n"
+            f"**📑 আলাদা হিসাব:**\n{''.join(individual_calcs)}\n"
             f"**📊 মোট (আলাদা):**\n"
             f"• মোট শীট: {total_sheets}টি\n"
             f"• মোট দাম: {total_price:.1f} টাকা\n\n"
