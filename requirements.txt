@@ -10,4 +10,5 @@ humanize
 img2pdf
 requests
 motor
+aiohttp
 
