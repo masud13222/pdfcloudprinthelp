@@ -9,12 +9,18 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .
 
+# Expose port for health check
+EXPOSE 8080
+
+# Set environment variable for Python to run in unbuffered mode
+ENV PYTHONUNBUFFERED=1
+
 # Command to run the bot
-CMD ["python", "bot.py"] 
+CMD ["python3", "-u", "bot.py"]
