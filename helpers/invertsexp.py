@@ -50,49 +50,40 @@ def analyze_page(page, zoom=2.0):
         # Get dimensions
         height, width = gray.shape
         
-        # Define regions (analyze full page)
-        header_height = height // 12  # Smaller header/footer
-        footer_height = height // 12
-        margin_width = width // 12    # Smaller margins
+        # Define regions - focus on body content
+        header_height = height // 4  # Top 25%
+        footer_height = height // 4  # Bottom 25%
+        margin_width = width // 6   # Side margins
         
-        # Extract main content area
-        content_area = gray[header_height:-footer_height, margin_width:-margin_width]
+        # Get body content area only
+        body = gray[header_height:-footer_height, margin_width:-margin_width]
         
-        # Calculate metrics with adjusted thresholds
-        # 1. Content density
-        binary_content = content_area < 245  # More sensitive to light content
-        content_density = np.mean(binary_content)
+        # Calculate metrics for body area
+        binary = body < 245
+        content_density = np.mean(binary)
         
-        # 2. Line detection
-        edges_y = np.gradient(content_area, axis=0)
-        line_density = np.mean(np.abs(edges_y) > 12)  # More sensitive to lines
+        # Edge detection in body area
+        edges_y = np.gradient(body, axis=0)
+        edges_x = np.gradient(body, axis=1)
         
-        # 3. Variance in pixel values
-        local_variance = np.std(content_area)
+        line_density_y = np.mean(np.abs(edges_y) > 10)  # More sensitive
+        line_density_x = np.mean(np.abs(edges_x) > 10)  # More sensitive
+        line_density = max(line_density_x, line_density_y)
         
-        # 4. Text pattern detection
-        edges_x = np.gradient(content_area, axis=1)
-        text_pattern = np.mean(np.abs(edges_x) > 12)
+        # Variance in body area
+        variance = np.std(body)
         
-        # Calculate content percentage in different regions
-        top = np.mean(gray[:header_height, :] < 245)
-        bottom = np.mean(gray[-footer_height:, :] < 245)
-        middle = content_density
-        
-        # Adjusted thresholds for empty page detection
+        # Empty page detection - only check body content
         is_empty = (
-            (content_density < 0.01 and  # Very low content (1%)
-             line_density < 0.008 and    # Very few lines
-             text_pattern < 0.008 and    # Very few text patterns
-             local_variance < 12) or     # Low variance
-            (top < 0.01 and bottom < 0.01 and middle < 0.015)  # Almost no content throughout
+            content_density < 0.004 and  # Extremely low content (0.4%)
+            line_density < 0.003 and     # Almost no lines
+            variance < 8                 # Very low variation
         )
         
         return {
             'content_density': content_density,
             'line_density': line_density,
-            'text_pattern': text_pattern,
-            'local_variance': local_variance,
+            'variance': variance,
             'is_empty': is_empty
         }
         
@@ -137,29 +128,39 @@ async def progress(current: int, total: int, message: Message, user_id: int, tex
     except Exception as e:
         print(f"Progress update error: {str(e)}")
 
-async def invertnew_command(client: Client, message: Message):
-    """Handle /invertnew command - Invert PDF pages."""
+async def invertsexp_command(client: Client, message: Message):
+    """Handle /invertsexp command - Experimental version with enhanced features."""
     try:
         user_id = message.from_user.id
         
-        # Initialize state for user
+        # Initialize state
         if user_id in user_states:
             user_states[user_id].reset()
             del user_states[user_id]
         user_states[user_id] = PDFMerger()
         
-        # Check if command is a reply to a PDF file
+        # Check if command is a reply to PDF
         if not message.reply_to_message or not message.reply_to_message.document or \
            not message.reply_to_message.document.file_name.lower().endswith('.pdf'):
             await message.reply_text(
-                "❌ **দয়া করে একটি PDF ফাইলে রিপ্লাই দিয়ে /invertnew কমান্ড দিন।**\n\n"
+                "❌ **দয়া করে একটি PDF ফাইলে রিপ্লাই দিয়ে /invertsexp কমান্ড দিন।**\n\n"
+                "**⚠️ এক্সপেরিমেন্টাল ভার্সন!**\n"
+                "এই ভার্সনে নতুন ফিচার টেস্ট করা হচ্ছে।\n\n"
                 "**📝 ফিচারসমূহ:**\n"
-                "• সব পেজ স্বয়ংক্রিয়ভাবে ইনভার্ট হবে\n"
-                "• কোন পেজ ডিলিট হবে না\n\n"
+                "• ডার্ক পেজগুলো স্বয়ংক্রিয়ভাবে ইনভার্ট হবে\n"
+                "• লাইট পেজগুলো আগের মতই থাকবে\n"
+                "• উন্নত খালি পেজ ডিটেকশন\n"
+                "• হেডার/ফুটার ইগনোর করে কনটেন্ট চেক\n"
+                "• প্রতি 10 পেজে স্ট্যাটাস আপডেট\n"
+                "• খালি পেজের তালিকা দেখানো\n\n"
                 "**🔄 ব্যবহার পদ্ধতি:**\n"
                 "1️⃣ PDF ফাইলটি পাঠান\n"
-                "2️⃣ ফাইলে রিপ্লাই দিয়ে /invertnew কমান্ড দিন\n"
-                "3️⃣ প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন"
+                "2️⃣ ফাইলে রিপ্লাই দিয়ে /invertsexp কমান্ড দিন\n"
+                "3️⃣ প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন\n\n"
+                "**ℹ️ বিশেষ দ্রষ্টব্য:**\n"
+                "• হেডার/ফুটার বাদ দিয়ে শুধু মূল কনটেন্ট চেক করা হয়\n"
+                "• খালি পেজ = পেজের 1.5% এর কম কনটেন্ট আছে\n"
+                "• প্রতি 10 পেজে স্ট্যাটাস আপডেট দেখানো হয়"
             )
             return
         
@@ -215,7 +216,7 @@ async def invertnew_command(client: Client, message: Message):
                 # Update status every 10 pages
                 if page_num % update_interval == 0:
                     await edit_or_reply(
-                        message, 
+                        message,
                         user_id,
                         f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
                         f"• পেজ: {page_num + 1}/{total_pages}\n"

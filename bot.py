@@ -21,7 +21,6 @@ from helpers.inverts import inverts_command
 from helpers.drive import drive_command
 from helpers.price import price_command
 from helpers.pages import pages_command
-from helpers.invertnew import invertnew_command
 from group.settings import (
     uset_command, 
     settings_callback,
@@ -32,6 +31,7 @@ from group.settings import (
     is_bot_active,
     settings_collection
 )
+from helpers.invertsexp import invertsexp_command
 
 # Simple HTTP Server for health checks
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -87,12 +87,12 @@ async def inverts_handler(client, message):
         return
     await inverts_command(client, message)
 
-@bot.on_message(filters.command("invertnew") & filters.private)
-async def invertnew_handler(client, message):
-    print("Invertnew command received")
+@bot.on_message(filters.command("invertsexp") & filters.private)
+async def invertsexp_handler(client, message):
+    print("Invertsexp command received")
     if not await force_sub_check(client, message):
         return
-    await invertnew_command(client, message)
+    await invertsexp_command(client, message)
 
 @bot.on_message(filters.command("users") & filters.private)
 async def users_handler(client, message):

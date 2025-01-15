@@ -30,9 +30,9 @@ async def edit_or_reply(message: Message, user_id: int, text: str):
         print(f"Status update error: {str(e)}")
 
 def analyze_page(page, zoom=2.0):
-    """Analyze page content using AI-powered detection."""
+    """Analyze page content using enhanced detection."""
     try:
-        # Create matrix for higher resolution analysis
+        # Create matrix for analysis
         mat = fitz.Matrix(zoom, zoom)
         pix = page.get_pixmap(matrix=mat, alpha=False)
         
@@ -43,17 +43,23 @@ def analyze_page(page, zoom=2.0):
         # Convert to grayscale
         gray = np.dot(img_array[...,:3], [0.2989, 0.5870, 0.1140])
         
-        # Thresholding
-        binary = gray < 250
+        # Get dimensions and calculate header/footer heights
+        height = gray.shape[0]
+        header_height = int(height * 0.01)  # Top 10%
+        footer_height = int(height * 0.01)  # Bottom 10%
         
-        # Calculate content percentage
+        # Get content area excluding header/footer
+        content_area = gray[header_height:-footer_height, :]
+        
+        # Simple thresholding on content area
+        binary = content_area < 250
         content_percentage = np.mean(binary)
         
-        # Advanced empty page detection
-        is_empty = content_percentage < 0.03  # Less than 3% content
+        # Check if empty based on content percentage
+        is_empty = content_percentage < 0.015
         
         return {
-            'content_percentage': content_percentage,
+            'content_density': content_percentage,
             'is_empty': is_empty
         }
         
@@ -125,7 +131,7 @@ async def inverts_command(client: Client, message: Message):
                 "2️⃣ ফাইলে রিপ্লাই দিয়ে /inverts কমান্ড দিন\n"
                 "3️⃣ প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন\n\n"
                 "**ℹ️ বিশেষ দ্রষ্টব্য:**\n"
-                "• খালি পেজ = পেজের ৩% এর কম কনটেন্ট আছে\n"
+                "• খালি পেজ = পেজের 1.5% এর কম কনটেন্ট আছে\n"
                 "• সব খালি পেজের নম্বর ফাইনাল মেসেজে দেখানো হবে"
             )
             return
@@ -170,6 +176,8 @@ async def inverts_command(client: Client, message: Message):
             # Process pages
             total_pages = doc.page_count
             inverted_count = 0
+            update_interval = 10  # Update every 10 pages
+            
             for page_num in range(total_pages):
                 # Check if cancelled
                 if user_id not in user_states:
@@ -177,14 +185,15 @@ async def inverts_command(client: Client, message: Message):
                     out_pdf.close()
                     return
                 
-                # Update status
-                await edit_or_reply(
-                    message, 
-                    user_id,
-                    f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
-                    f"• পেজ: {page_num + 1}/{total_pages}\n"
-                    f"• ইনভার্টেড: {inverted_count}টি"
-                )
+                # Update status every 10 pages
+                if page_num % update_interval == 0:
+                    await edit_or_reply(
+                        message,
+                        user_id,
+                        f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
+                        f"• পেজ: {page_num + 1}/{total_pages}\n"
+                        f"• ইনভার্টেড: {inverted_count}টি"
+                    )
                 
                 page = doc[page_num]
                 
@@ -257,14 +266,15 @@ async def inverts_command(client: Client, message: Message):
                     out_pdf.close()
                     return
                 
-                # Update status
-                await edit_or_reply(
-                    message,
-                    user_id,
-                    f"🔍 **খালি পেজ চেক করা হচ্ছে...**\n\n"
-                    f"• পেজ: {page_num + 1}/{doc.page_count}\n"
-                    f"• খালি পেজ: {len(empty_pages)}টি"
-                )
+                # Update status every 10 pages
+                if page_num % update_interval == 0:
+                    await edit_or_reply(
+                        message,
+                        user_id,
+                        f"🔍 **খালি পেজ চেক করা হচ্ছে...**\n\n"
+                        f"• পেজ: {page_num + 1}/{doc.page_count}\n"
+                        f"• খালি পেজ: {len(empty_pages)}টি"
+                    )
                 
                 page = doc[page_num]
                 analysis = analyze_page(page)
