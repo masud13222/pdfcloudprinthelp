@@ -6,6 +6,32 @@ import asyncio
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from helpers.merge import merge_command, handle_pdf
+from group.users import users_command
+from group.broadcast import broadcast_command
+from group.database import (
+    start_command,
+    handle_force_sub_callback,
+    check_subscription,
+    force_sub_message
+)
+from helpers.cancel import cancel_command
+from helpers.invert import invert_command
+from helpers.inverts import inverts_command
+from helpers.drive import drive_command
+from helpers.price import price_command
+from helpers.pages import pages_command
+from helpers.invertnew import invertnew_command
+from group.settings import (
+    uset_command, 
+    settings_callback,
+    handle_welcome_text,
+    handle_username_text,
+    groupon_command,
+    groupoff_command,
+    is_bot_active,
+    settings_collection
+)
 
 # Simple HTTP Server for health checks
 class HealthCheckHandler(BaseHTTPRequestHandler):
@@ -27,33 +53,6 @@ threading.Thread(target=run_health_server, daemon=True).start()
 
 # Load environment variables
 load_dotenv()
-
-# Import commands from helpers
-from helpers.merge import merge_command, handle_pdf
-from group.users import users_command
-from group.broadcast import broadcast_command
-from group.database import (
-    start_command,
-    handle_force_sub_callback,
-    check_subscription,
-    force_sub_message
-)
-from helpers.cancel import cancel_command
-from helpers.invert import invert_command
-from helpers.inverts import inverts_command
-from helpers.drive import drive_command
-from helpers.price import price_command
-from helpers.pages import pages_command
-from group.settings import (
-    uset_command, 
-    settings_callback,
-    handle_welcome_text,
-    handle_username_text,
-    groupon_command,
-    groupoff_command,
-    is_bot_active,
-    settings_collection
-)
 
 # Initialize bot
 bot = Client(
@@ -87,6 +86,13 @@ async def inverts_handler(client, message):
     if not await force_sub_check(client, message):
         return
     await inverts_command(client, message)
+
+@bot.on_message(filters.command("invertnew") & filters.private)
+async def invertnew_handler(client, message):
+    print("Invertnew command received")
+    if not await force_sub_check(client, message):
+        return
+    await invertnew_command(client, message)
 
 @bot.on_message(filters.command("users") & filters.private)
 async def users_handler(client, message):
