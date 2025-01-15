@@ -8,22 +8,26 @@ import numpy as np
 from PIL import Image
 import io
 import humanize
+import asyncio
 
 # Import state management
 from .state import status_messages, user_states, PDFMerger, last_progress_update
 from .cancel import cancel_command
 
 async def edit_or_reply(message: Message, user_id: int, text: str):
-    """Edit existing status message or send new one."""
+    """Edit existing status message or send new one with rate limiting."""
     try:
         if user_id in status_messages:
             try:
+                # Add delay between edits
+                await asyncio.sleep(3)
                 await status_messages[user_id].edit_text(text)
                 return
             except Exception as e:
                 print(f"Edit error: {str(e)}")
         
-        # If edit fails or no message exists, send new
+        # If edit fails or no message exists, send new with delay
+        await asyncio.sleep(3)
         status_messages[user_id] = await message.reply_text(text)
             
     except Exception as e:
@@ -46,35 +50,48 @@ def analyze_page(page, zoom=2.0):
         # Get dimensions
         height, width = gray.shape
         
-        # Define regions
-        header_height = height // 8
-        footer_height = height // 8
-        margin_width = width // 8
+        # Define regions (analyze full page)
+        header_height = height // 12  # Smaller header/footer
+        footer_height = height // 12
+        margin_width = width // 12    # Smaller margins
         
-        # Extract main content area (excluding headers, footers and margins)
+        # Extract main content area
         content_area = gray[header_height:-footer_height, margin_width:-margin_width]
         
-        # Calculate metrics
-        # 1. Content density in main area
-        binary_content = content_area < 250
+        # Calculate metrics with adjusted thresholds
+        # 1. Content density
+        binary_content = content_area < 245  # More sensitive to light content
         content_density = np.mean(binary_content)
         
-        # 2. Line detection (horizontal text lines)
+        # 2. Line detection
         edges_y = np.gradient(content_area, axis=0)
-        line_density = np.mean(np.abs(edges_y) > 20)
+        line_density = np.mean(np.abs(edges_y) > 12)  # More sensitive to lines
         
-        # 3. Variance in pixel values (text usually has high variance)
+        # 3. Variance in pixel values
         local_variance = np.std(content_area)
         
-        # Combine metrics for final decision with more lenient thresholds
+        # 4. Text pattern detection
+        edges_x = np.gradient(content_area, axis=1)
+        text_pattern = np.mean(np.abs(edges_x) > 12)
+        
+        # Calculate content percentage in different regions
+        top = np.mean(gray[:header_height, :] < 245)
+        bottom = np.mean(gray[-footer_height:, :] < 245)
+        middle = content_density
+        
+        # Adjusted thresholds for empty page detection
         is_empty = (
-            content_density < 0.01 or  # Extremely low content
-            (content_density < 0.02 and line_density < 0.005 and local_variance < 10)  # Very low content with no lines
+            (content_density < 0.01 and  # Very low content (1%)
+             line_density < 0.008 and    # Very few lines
+             text_pattern < 0.008 and    # Very few text patterns
+             local_variance < 12) or     # Low variance
+            (top < 0.01 and bottom < 0.01 and middle < 0.015)  # Almost no content throughout
         )
         
         return {
             'content_density': content_density,
             'line_density': line_density,
+            'text_pattern': text_pattern,
             'local_variance': local_variance,
             'is_empty': is_empty
         }
@@ -186,6 +203,8 @@ async def invertnew_command(client: Client, message: Message):
             # Process pages
             total_pages = doc.page_count
             inverted_count = 0
+            update_interval = 10  # Update every 10 pages
+            
             for page_num in range(total_pages):
                 # Check if cancelled
                 if user_id not in user_states:
@@ -193,14 +212,15 @@ async def invertnew_command(client: Client, message: Message):
                     out_pdf.close()
                     return
                 
-                # Update status
-                await edit_or_reply(
-                    message, 
-                    user_id,
-                    f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
-                    f"• পেজ: {page_num + 1}/{total_pages}\n"
-                    f"• ইনভার্টেড: {inverted_count}টি"
-                )
+                # Update status every 10 pages
+                if page_num % update_interval == 0:
+                    await edit_or_reply(
+                        message, 
+                        user_id,
+                        f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
+                        f"• পেজ: {page_num + 1}/{total_pages}\n"
+                        f"• ইনভার্টেড: {inverted_count}টি"
+                    )
                 
                 page = doc[page_num]
                 
@@ -273,14 +293,15 @@ async def invertnew_command(client: Client, message: Message):
                     out_pdf.close()
                     return
                 
-                # Update status
-                await edit_or_reply(
-                    message,
-                    user_id,
-                    f"🔍 **খালি পেজ চেক করা হচ্ছে...**\n\n"
-                    f"• পেজ: {page_num + 1}/{doc.page_count}\n"
-                    f"• খালি পেজ: {len(empty_pages)}টি"
-                )
+                # Update status every 10 pages
+                if page_num % update_interval == 0:
+                    await edit_or_reply(
+                        message,
+                        user_id,
+                        f"🔍 **খালি পেজ চেক করা হচ্ছে...**\n\n"
+                        f"• পেজ: {page_num + 1}/{doc.page_count}\n"
+                        f"• খালি পেজ: {len(empty_pages)}টি"
+                    )
                 
                 page = doc[page_num]
                 analysis = analyze_page(page)
