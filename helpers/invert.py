@@ -82,7 +82,9 @@ async def invert_command(client: Client, message: Message):
                 "**🔄 ব্যবহার পদ্ধতি:**\n"
                 "1️⃣ PDF ফাইলটি পাঠান\n"
                 "2️⃣ ফাইলে রিপ্লাই দিয়ে /invert কমান্ড দিন\n"
-                "3️⃣ প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন"
+                "3️⃣ প্রসেস শেষ হওয়া পর্যন্ত অপেক্ষা করুন\n\n"
+                "**📺 টিউটোরিয়াল দেখুন:**\n"
+                "• https://www.youtube.com/shorts/WlYxu2pkKRI"
             )
             return
         
@@ -130,6 +132,8 @@ async def invert_command(client: Client, message: Message):
             # Process pages
             total_pages = doc.page_count
             inverted_count = 0
+            update_interval = 15  # Update every 10 pages
+            
             for page_num in range(total_pages):
                 # Check if cancelled
                 if user_id not in user_states:
@@ -137,14 +141,15 @@ async def invert_command(client: Client, message: Message):
                     out_pdf.close()
                     return
                 
-                # Update status
-                await edit_or_reply(
-                    message, 
-                    user_id,
-                    f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
-                    f"• পেজ: {page_num + 1}/{total_pages}\n"
-                    f"• ইনভার্টেড: {inverted_count}টি"
-                )
+                # Update status every 10 pages
+                if page_num % update_interval == 0 or page_num == total_pages - 1:
+                    await edit_or_reply(
+                        message, 
+                        user_id,
+                        f"🔄 **PDF প্রসেস করা হচ্ছে...**\n\n"
+                        f"• পেজ: {page_num + 1}/{total_pages}\n"
+                        f"• ইনভার্টেড: {inverted_count}টি"
+                    )
                 
                 page = doc[page_num]
                 
