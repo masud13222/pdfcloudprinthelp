@@ -83,16 +83,11 @@ async def invert_handler(client, message):
 
 @bot.on_message(filters.command("inverts") & filters.private)
 async def inverts_handler(client, message):
-    if not await force_sub_check(client, message):
-        return
-    await inverts_command(client, message)
+    await message.reply_text("⚠️ এই কমান্ডটি বর্তমানে বন্ধ আছে। অনুগ্রহ করে /invert কমান্ড ব্যবহার করুন।")
 
 @bot.on_message(filters.command("invertsexp") & filters.private)
 async def invertsexp_handler(client, message):
-    print("Invertsexp command received")
-    if not await force_sub_check(client, message):
-        return
-    await invertsexp_command(client, message)
+    await message.reply_text("⚠️ এই কমান্ডটি বর্তমানে বন্ধ আছে। অনুগ্রহ করে /invert কমান্ড ব্যবহার করুন।")
 
 @bot.on_message(filters.command("users") & filters.private)
 async def users_handler(client, message):
