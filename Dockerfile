@@ -16,5 +16,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Command to run the bot
-CMD ["python", "bot.py"] 
+# Command to run both Flask and bot
+CMD gunicorn app:app & python3 bot.py 
